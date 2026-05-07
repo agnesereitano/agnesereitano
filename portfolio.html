@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agnese Reitano — Video Editor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;700;900&family=Outfit:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --black:  #0a0a0a;
+  --white:  #f5f5f0;
+  --pink:   #ff006e;
+  --yellow: #ffd60a;
+  --gray:   #1a1a1a;
+  --mid:    #555;
+  --font-display: 'Unbounded', sans-serif;
+  --font-body:    'Outfit', sans-serif;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--black);
+  color: var(--white);
+  font-family: var(--font-body);
+  overflow-x: hidden;
+  cursor: none;
+}
+
+::selection { background: var(--yellow); color: var(--black); }
+
+/* ── CURSOR ──────────────────────────────── */
+#cur-dot {
+  position: fixed; width: 10px; height: 10px;
+  background: var(--yellow); border-radius: 50%;
+  pointer-events: none; z-index: 99999;
+  transform: translate(-50%,-50%);
+  transition: background 0.15s, transform 0.1s;
+}
+#cur-ring {
+  position: fixed; width: 36px; height: 36px;
+  border: 1.5px solid rgba(255,214,10,0.45);
+  border-radius: 50%; pointer-events: none; z-index: 99998;
+  transform: translate(-50%,-50%);
+}
+body:has(.cat-row:hover) #cur-dot { background: var(--black); transform: translate(-50%,-50%) scale(2.5); }
+
+/* ── NAV ──────────────────────────────────── */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 500;
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 1.4rem 2.5rem;
+  background: var(--black);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.nav-name {
+  font-family: var(--font-display);
+  font-size: 11px; font-weight: 700;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--white);
+}
+.nav-name span { color: var(--pink); }
+.nav-links { display: flex; gap: 2rem; list-style: none; }
+.nav-links a {
+  font-family: var(--font-body); font-size: 12px; font-weight: 500;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  color: rgba(255,255,255,0.4); text-decoration: none;
+  transition: color 0.2s;
+}
+.nav-links a:hover { color: var(--yellow); }
+
+/* ── HERO ─────────────────────────────────── */
+#hero {
+  min-height: 100vh; display: flex; flex-direction: column;
+  justify-content: flex-end;
+  padding: 0 2.5rem 3.5rem;
+  position: relative; overflow: hidden;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+/* Tickertape background text */
+.hero-bg-text {
+  position: absolute; top: 50%; left: 0; right: 0;
+  transform: translateY(-50%);
+  font-family: var(--font-display); font-size: clamp(80px, 18vw, 240px);
+  font-weight: 900; letter-spacing: -0.04em; line-height: 1;
+  color: transparent; -webkit-text-stroke: 1px rgba(255,255,255,0.04);
+  white-space: nowrap; pointer-events: none; user-select: none;
+  animation: slideBg 18s linear infinite;
+}
+@keyframes slideBg { from { transform: translateY(-50%) translateX(0); } to { transform: translateY(-50%) translateX(-50%); } }
+
+.hero-content { position: relative; z-index: 2; }
+
+.hero-tag {
+  display: inline-block;
+  font-family: var(--font-body); font-size: 11px; font-weight: 500;
+  letter-spacing: 0.22em; text-transform: uppercase;
+  color: var(--black); background: var(--yellow);
+  padding: 5px 14px; border-radius: 2px;
+  margin-bottom: 1.6rem;
+  opacity: 0; transform: translateY(16px);
+  animation: up 0.6s ease 0.2s forwards;
+}
+.hero-title {
+  font-family: var(--font-display);
+  font-size: clamp(72px, 13vw, 190px);
+  font-weight: 900; line-height: 0.9;
+  letter-spacing: -0.03em;
+  opacity: 0; transform: translateY(40px);
+  animation: up 0.9s ease 0.4s forwards;
+}
+.hero-title .line-pink { color: var(--pink); display: block; }
+.hero-title .line-white { color: var(--white); display: block; }
+
+.hero-bottom {
+  margin-top: 2.8rem;
+  display: flex; justify-content: space-between; align-items: flex-end;
+  opacity: 0; animation: up 0.7s ease 0.85s forwards;
+}
+.hero-desc {
+  font-size: 14px; font-weight: 300; line-height: 1.8;
+  color: rgba(255,255,255,0.55); max-width: 380px;
+}
+.hero-desc strong { color: var(--white); font-weight: 500; }
+
+.scroll-badge {
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  text-decoration: none;
+}
+.scroll-badge-label {
+  font-family: var(--font-display); font-size: 9px; font-weight: 700;
+  letter-spacing: 0.3em; text-transform: uppercase;
+  color: rgba(255,255,255,0.3);
+  writing-mode: horizontal-tb;
+}
+.scroll-circle {
+  width: 52px; height: 52px;
+  border: 1.5px solid rgba(255,255,255,0.15);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  animation: pulse-ring 2.2s ease-in-out 1.5s infinite;
+  transition: border-color 0.25s, background 0.25s;
+}
+.scroll-badge:hover .scroll-circle {
+  border-color: var(--yellow); background: var(--yellow);
+}
+.scroll-badge:hover .scroll-circle svg { stroke: var(--black); }
+.scroll-circle svg { width: 18px; height: 18px; stroke: var(--white); stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; animation: bounce 1.8s ease-in-out 1.5s infinite; }
+@keyframes pulse-ring { 0%,100% { box-shadow: 0 0 0 0 rgba(255,214,10,0); } 50% { box-shadow: 0 0 0 8px rgba(255,214,10,0.12); } }
+@keyframes bounce { 0%,100% { transform: translateY(0); } 50% { transform: translateY(6px); } }
+
+/* ── INTRO STRIP ─────────────────────────── */
+.intro-strip {
+  display: flex; align-items: center; gap: 0;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  overflow: hidden;
+}
+.intro-item {
+  flex: 1; padding: 1.4rem 2.5rem;
+  font-size: 11px; font-weight: 500; letter-spacing: 0.15em; text-transform: uppercase;
+  color: rgba(255,255,255,0.35);
+  border-right: 1px solid rgba(255,255,255,0.08);
+}
+.intro-item:last-child { border-right: none; }
+.intro-item strong { color: var(--white); display: block; font-size: 18px; font-weight: 700; letter-spacing: 0; font-family: var(--font-display); margin-bottom: 2px; }
+
+/* ── CATEGORIES ──────────────────────────── */
+#work { border-bottom: 1px solid rgba(255,255,255,0.08); }
+
+.cat-row {
+  display: grid; grid-template-columns: 90px 1fr auto;
+  align-items: center; gap: 0;
+  padding: 3.2rem 2.5rem;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  cursor: none; position: relative;
+  transition: background 0.3s, color 0.3s;
+  overflow: hidden;
+}
+.cat-row::before {
+  content: attr(data-title);
+  position: absolute; right: -20px; top: 50%;
+  transform: translateY(-50%);
+  font-family: var(--font-display); font-size: clamp(60px,10vw,130px); font-weight: 900;
+  color: transparent; -webkit-text-stroke: 1px rgba(255,255,255,0.04);
+  pointer-events: none; user-select: none; white-space: nowrap;
+  transition: -webkit-text-stroke-color 0.3s;
+}
+.cat-row:hover { color: var(--black); }
+.cat-row:nth-child(1):hover { background: var(--pink); }
+.cat-row:nth-child(2):hover { background: var(--yellow); }
+.cat-row:nth-child(3):hover { background: var(--pink); }
+.cat-row:nth-child(1):hover::before,
+.cat-row:nth-child(2):hover::before,
+.cat-row:nth-child(3):hover::before { -webkit-text-stroke-color: rgba(0,0,0,0.07); }
+
+.cat-index {
+  font-family: var(--font-display); font-size: 11px; font-weight: 700;
+  letter-spacing: 0.1em; opacity: 0.3;
+  transition: opacity 0.3s;
+}
+.cat-row:hover .cat-index { opacity: 0.5; color: var(--black); }
+
+.cat-center { display: flex; flex-direction: column; gap: 0.6rem; }
+.cat-name {
+  font-family: var(--font-display);
+  font-size: clamp(32px, 5.5vw, 72px); font-weight: 900;
+  letter-spacing: -0.02em; line-height: 1;
+  transition: color 0.3s;
+}
+.cat-row:nth-child(1) .cat-name { color: var(--white); }
+.cat-row:nth-child(2) .cat-name { color: var(--white); }
+.cat-row:nth-child(3) .cat-name { color: var(--white); }
+.cat-row:hover .cat-name { color: var(--black); }
+
+.cat-sub {
+  font-size: 12px; font-weight: 400; letter-spacing: 0.08em;
+  color: rgba(255,255,255,0.45); line-height: 1;
+  transition: color 0.3s;
+}
+.cat-row:hover .cat-sub { color: rgba(0,0,0,0.55); }
+
+.cat-tags { display: flex; gap: 6px; margin-top: 4px; flex-wrap: wrap; }
+.cat-tag {
+  font-size: 10px; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase;
+  padding: 3px 10px; border-radius: 20px;
+  border: 1px solid rgba(255,255,255,0.15); color: rgba(255,255,255,0.5);
+  transition: border-color 0.3s, color 0.3s, background 0.3s;
+}
+.cat-row:hover .cat-tag { border-color: rgba(0,0,0,0.25); color: rgba(0,0,0,0.6); background: rgba(0,0,0,0.08); }
+
+.cat-arrow {
+  width: 56px; height: 56px;
+  border: 1.5px solid rgba(255,255,255,0.2);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; position: relative; z-index: 1;
+  transition: background 0.25s, border-color 0.25s, transform 0.3s;
+}
+.cat-arrow svg { width: 22px; height: 22px; stroke: var(--white); stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; transition: stroke 0.25s, transform 0.3s; }
+.cat-row:hover .cat-arrow { background: var(--black); border-color: var(--black); transform: rotate(-45deg); }
+.cat-row:hover .cat-arrow svg { stroke: var(--white); transform: rotate(45deg); }
+
+/* ── PROJECT PANEL ───────────────────────── */
+#panel-overlay {
+  position: fixed; inset: 0; z-index: 800;
+  background: rgba(0,0,0,0.7);
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.4s;
+  backdrop-filter: blur(4px);
+}
+#panel-overlay.open { opacity: 1; pointer-events: all; }
+
+#project-panel {
+  position: fixed; top: 0; right: 0; bottom: 0;
+  width: min(760px, 92vw); z-index: 900;
+  background: var(--gray);
+  transform: translateX(100%);
+  transition: transform 0.5s cubic-bezier(0.22,1,0.36,1);
+  display: flex; flex-direction: column;
+  overflow-y: auto;
+}
+#project-panel.open { transform: translateX(0); }
+
+.panel-head {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 2rem 2.5rem 1.5rem;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  position: sticky; top: 0; background: var(--gray); z-index: 10;
+}
+.panel-category-name {
+  font-family: var(--font-display); font-size: 13px; font-weight: 700;
+  letter-spacing: 0.1em; text-transform: uppercase;
+}
+#panel-accent-bar {
+  display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+  margin-right: 10px; vertical-align: middle;
+}
+.panel-close {
+  width: 44px; height: 44px;
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 50%; background: none; cursor: none;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.2s, border-color 0.2s;
+}
+.panel-close:hover { background: var(--pink); border-color: var(--pink); }
+.panel-close svg { width: 16px; height: 16px; stroke: var(--white); stroke-width: 2; fill: none; }
+
+.panel-body { padding: 2rem 2.5rem 3rem; flex: 1; }
+.panel-desc {
+  font-size: 13px; font-weight: 300; line-height: 1.8;
+  color: rgba(255,255,255,0.5); margin-bottom: 2rem;
+}
+
+.projects-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+}
+.project-card {
+  background: #111; border-radius: 6px; overflow: hidden;
+  cursor: none; text-decoration: none; display: block;
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+.project-card:hover { transform: translateY(-4px); box-shadow: 0 16px 40px rgba(0,0,0,0.5); }
+.project-thumb {
+  aspect-ratio: 16/9; position: relative;
+  background: #1a1a1a; display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+}
+.project-thumb-bg {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-display); font-size: 10px; font-weight: 700;
+  letter-spacing: 0.2em; text-transform: uppercase;
+  opacity: 0.06; color: var(--white);
+}
+.play-btn {
+  width: 46px; height: 46px;
+  border-radius: 50%; border: 1.5px solid rgba(255,255,255,0.3);
+  display: flex; align-items: center; justify-content: center;
+  position: relative; z-index: 2;
+  transition: background 0.2s, border-color 0.2s, transform 0.2s;
+}
+.project-card:hover .play-btn { background: var(--pink); border-color: var(--pink); transform: scale(1.1); }
+.play-btn svg { width: 16px; height: 16px; fill: var(--white); margin-left: 2px; }
+
+.project-info { padding: 14px 16px 16px; }
+.project-title { font-family: var(--font-display); font-size: 13px; font-weight: 700; color: var(--white); margin-bottom: 4px; letter-spacing: -0.01em; }
+.project-meta { font-size: 11px; font-weight: 400; color: rgba(255,255,255,0.35); letter-spacing: 0.08em; }
+
+/* ── ABOUT STRIP ─────────────────────────── */
+#about {
+  display: grid; grid-template-columns: 1fr 1fr;
+  border-top: 1px solid rgba(255,255,255,0.08);
+}
+.about-left {
+  padding: 5rem 2.5rem;
+  border-right: 1px solid rgba(255,255,255,0.08);
+}
+.about-label {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.25em; text-transform: uppercase;
+  color: var(--pink); margin-bottom: 1.5rem;
+}
+.about-title {
+  font-family: var(--font-display); font-weight: 900;
+  font-size: clamp(28px, 4vw, 52px); line-height: 1.05; letter-spacing: -0.02em;
+  margin-bottom: 1.8rem;
+}
+.about-text {
+  font-size: 14px; font-weight: 300; line-height: 1.85;
+  color: rgba(255,255,255,0.55);
+}
+.about-text strong { color: var(--white); font-weight: 500; }
+.about-right {
+  padding: 5rem 2.5rem;
+  display: flex; flex-direction: column; justify-content: space-between;
+}
+.tools-label { font-size: 10px; font-weight: 700; letter-spacing: 0.25em; text-transform: uppercase; color: rgba(255,255,255,0.3); margin-bottom: 1.2rem; }
+.tools-list { display: flex; flex-direction: column; gap: 0; }
+.tool-item {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 14px 0; border-bottom: 1px solid rgba(255,255,255,0.06);
+  font-size: 13px; font-weight: 400; color: rgba(255,255,255,0.6);
+}
+.tool-item:last-child { border-bottom: none; }
+.tool-item span { font-size: 10px; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(255,255,255,0.2); }
+
+/* ── FOOTER ──────────────────────────────── */
+footer {
+  background: var(--pink);
+  padding: 5rem 2.5rem 3rem;
+}
+.footer-inner { display: flex; justify-content: space-between; align-items: flex-start; }
+.footer-title {
+  font-family: var(--font-display);
+  font-size: clamp(42px, 8vw, 110px); font-weight: 900;
+  letter-spacing: -0.03em; line-height: 0.9;
+  color: var(--black);
+}
+.footer-title .yellow { color: var(--yellow); }
+.footer-sub {
+  margin-top: 1.5rem; font-size: 13px; font-weight: 400; line-height: 1.8;
+  color: rgba(0,0,0,0.65);
+}
+.footer-right { display: flex; flex-direction: column; align-items: flex-end; gap: 1rem; padding-top: 8px; }
+.contact-btn {
+  display: inline-block; padding: 16px 40px;
+  font-family: var(--font-display); font-size: 12px; font-weight: 700;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--white); background: var(--black);
+  text-decoration: none; border-radius: 2px;
+  transition: background 0.25s, color 0.25s, transform 0.2s;
+  cursor: none;
+}
+.contact-btn:hover { background: var(--yellow); color: var(--black); transform: translateY(-3px); }
+.footer-social { display: flex; gap: 1rem; }
+.footer-social a {
+  font-size: 11px; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase;
+  color: rgba(0,0,0,0.5); text-decoration: none;
+  transition: color 0.2s;
+}
+.footer-social a:hover { color: var(--black); }
+.footer-bottom {
+  margin-top: 4rem; padding-top: 1.5rem;
+  border-top: 1px solid rgba(0,0,0,0.12);
+  display: flex; justify-content: space-between;
+  font-size: 11px; font-weight: 400; color: rgba(0,0,0,0.4);
+}
+
+/* ── REVEAL ──────────────────────────────── */
+.reveal { opacity: 0; transform: translateY(28px); transition: opacity 0.8s cubic-bezier(0.22,1,0.36,1), transform 0.8s cubic-bezier(0.22,1,0.36,1); }
+.reveal.visible { opacity: 1; transform: none; }
+.reveal-d1 { transition-delay: 0.08s; }
+.reveal-d2 { transition-delay: 0.18s; }
+.reveal-d3 { transition-delay: 0.3s; }
+
+/* ── KEYFRAMES ───────────────────────────── */
+@keyframes up { to { opacity: 1; transform: translateY(0); } }
+</style>
+</head>
+<body>
+
+<div id="cur-dot"></div>
+<div id="cur-ring"></div>
+
+<!-- OVERLAY + PANEL -->
+<div id="panel-overlay"></div>
+<aside id="project-panel">
+  <div class="panel-head">
+    <div class="panel-category-name">
+      <span id="panel-accent-bar"></span>
+      <span id="panel-title">Progetti</span>
+    </div>
+    <button class="panel-close" id="panel-close">
+      <svg viewBox="0 0 16 16"><line x1="2" y1="2" x2="14" y2="14"/><line x1="14" y1="2" x2="2" y2="14"/></svg>
+    </button>
+  </div>
+  <div class="panel-body">
+    <p class="panel-desc" id="panel-desc"></p>
+    <div class="projects-grid" id="projects-grid"></div>
+  </div>
+</aside>
+
+<!-- NAV -->
+<nav>
+  <span class="nav-name">Agnese <span>Reitano</span></span>
+  <ul class="nav-links">
+    <li><a href="#work">Lavori</a></li>
+    <li><a href="#about">About</a></li>
+    <li><a href="#footer">Contatti</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="hero-bg-text" aria-hidden="true">VIDEO EDITOR &nbsp; VIDEO EDITOR &nbsp; VIDEO EDITOR &nbsp; VIDEO EDITOR &nbsp; VIDEO EDITOR &nbsp;</div>
+  <div class="hero-content">
+    <span class="hero-tag">Video Editor — Milano</span>
+    <h1 class="hero-title">
+      <span class="line-pink">Agnese</span>
+      <span class="line-white">Reitano.</span>
+    </h1>
+    <div class="hero-bottom">
+      <p class="hero-desc">
+        Racconto storie attraverso il montaggio.<br>
+        <strong>Social video · AI generated · Motion design.</strong><br>
+        Ogni progetto ha il suo ritmo, la sua voce.
+      </p>
+      <a class="scroll-badge" href="#work">
+        <span class="scroll-badge-label">Scopri</span>
+        <div class="scroll-circle">
+          <svg viewBox="0 0 18 18"><polyline points="3,6 9,13 15,6"/></svg>
+        </div>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- INTRO STRIP -->
+<div class="intro-strip reveal">
+  <div class="intro-item"><strong>3</strong>Specializzazioni</div>
+  <div class="intro-item"><strong>+50</strong>Progetti</div>
+  <div class="intro-item"><strong>5+</strong>Anni di esperienza</div>
+  <div class="intro-item"><strong>100%</strong>Freelance</div>
+</div>
+
+<!-- WORK / CATEGORIES -->
+<section id="work">
+
+  <div class="cat-row reveal" data-title="SOCIAL" data-category="social">
+    <div class="cat-index">01</div>
+    <div class="cat-center">
+      <h2 class="cat-name">Video Social</h2>
+      <p class="cat-sub">Instagram · TikTok · YouTube · Reels</p>
+      <div class="cat-tags">
+        <span class="cat-tag">Short Form</span>
+        <span class="cat-tag">Brand Content</span>
+        <span class="cat-tag">Hook editing</span>
+      </div>
+    </div>
+    <div class="cat-arrow">
+      <svg viewBox="0 0 22 22"><line x1="5" y1="17" x2="17" y2="5"/><polyline points="7,5 17,5 17,15"/></svg>
+    </div>
+  </div>
+
+  <div class="cat-row reveal reveal-d1" data-title="AI" data-category="ai">
+    <div class="cat-index">02</div>
+    <div class="cat-center">
+      <h2 class="cat-name">AI Generated</h2>
+      <p class="cat-sub">Sora · Runway · Kling · Pika</p>
+      <div class="cat-tags">
+        <span class="cat-tag">Prompt Design</span>
+        <span class="cat-tag">Post-prod</span>
+        <span class="cat-tag">Color Grading</span>
+      </div>
+    </div>
+    <div class="cat-arrow">
+      <svg viewBox="0 0 22 22"><line x1="5" y1="17" x2="17" y2="5"/><polyline points="7,5 17,5 17,15"/></svg>
+    </div>
+  </div>
+
+  <div class="cat-row reveal reveal-d2" data-title="MOTION" data-category="motion">
+    <div class="cat-index">03</div>
+    <div class="cat-center">
+      <h2 class="cat-name">Motion Design</h2>
+      <p class="cat-sub">After Effects · Premiere · DaVinci Resolve</p>
+      <div class="cat-tags">
+        <span class="cat-tag">Title Design</span>
+        <span class="cat-tag">Kinetic Type</span>
+        <span class="cat-tag">2D Animation</span>
+      </div>
+    </div>
+    <div class="cat-arrow">
+      <svg viewBox="0 0 22 22"><line x1="5" y1="17" x2="17" y2="5"/><polyline points="7,5 17,5 17,15"/></svg>
+    </div>
+  </div>
+
+</section>
+
+<!-- ABOUT -->
+<section id="about">
+  <div class="about-left reveal">
+    <p class="about-label">Chi sono</p>
+    <h2 class="about-title">Il montaggio<br>come linguaggio.</h2>
+    <p class="about-text">
+      Sono Agnese Reitano, video editor con base a Milano.<br><br>
+      Lavoro con brand, creator e agenzie per trasformare<br>
+      <strong>materiale grezzo in storie che restano.</strong> Il mio approccio<br>
+      mescola rigore tecnico ed energia visiva — ogni taglio<br>
+      è una scelta, ogni ritmo è narrativa.
+    </p>
+  </div>
+  <div class="about-right reveal reveal-d1">
+    <div>
+      <p class="tools-label">Stack &amp; Tools</p>
+      <div class="tools-list">
+        <div class="tool-item">Adobe Premiere Pro <span>Montaggio</span></div>
+        <div class="tool-item">After Effects <span>Motion</span></div>
+        <div class="tool-item">DaVinci Resolve <span>Color</span></div>
+        <div class="tool-item">Runway / Kling / Sora <span>AI Video</span></div>
+        <div class="tool-item">Adobe Audition <span>Audio</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer id="footer">
+  <div class="footer-inner reveal">
+    <div>
+      <h2 class="footer-title">Lavoriamo<br><span class="yellow">insieme.</span></h2>
+      <p class="footer-sub">Disponibile per collaborazioni freelance · Milano &amp; remote</p>
+    </div>
+    <div class="footer-right">
+      <a href="mailto:ciao@agnesereitano.it" class="contact-btn">Scrivimi →</a>
+      <div class="footer-social">
+        <a href="#">Instagram</a>
+        <a href="#">LinkedIn</a>
+        <a href="#">Vimeo</a>
+      </div>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>Agnese Reitano — Video Editor</span>
+    <span>© 2025</span>
+  </div>
+</footer>
+
+<script>
+/* ── DATA ────────────────────────────────── */
+const data = {
+  social: {
+    title: 'Video Social',
+    color: '#ff006e',
+    desc: 'Contenuti pensati per performare sui social. Vertical video, hook nei primi 3 secondi, identità di brand riconoscibile a colpo d\'occhio.',
+    projects: [
+      { title: 'Lancio Collezione FW24', meta: 'Fashion Brand · Reels · 2024' },
+      { title: 'Campagna Awareness', meta: 'Non-profit · TikTok · 2024' },
+      { title: 'Creator Partnership', meta: 'Beauty · YouTube Shorts · 2023' },
+      { title: 'Product Reveal', meta: 'Tech Startup · Instagram · 2024' },
+      { title: 'Behind the Scenes', meta: 'Music Label · TikTok · 2023' },
+      { title: 'Serie Educational', meta: 'EdTech · YouTube · 2024' },
+    ]
+  },
+  ai: {
+    title: 'AI Generated Video',
+    color: '#ffd60a',
+    desc: 'Produzione video con strumenti AI di ultima generazione. Dall\'ideazione del prompt alla post-produzione finale: color grading, sound design, editing ritmico.',
+    projects: [
+      { title: 'Dystopian Brand Film', meta: 'Fashion · Runway ML · 2024' },
+      { title: 'Dreamscape Spot', meta: 'Wellness · Sora · 2025' },
+      { title: 'Abstract Loop Series', meta: 'Art Direction · Kling · 2024' },
+      { title: 'AI x Live Action', meta: 'Hybrid · Pika + Premiere · 2024' },
+      { title: 'Generative Manifesto', meta: 'Personal · Runway · 2025' },
+      { title: 'Campaign 2050', meta: 'Agency · Mixed AI · 2025' },
+    ]
+  },
+  motion: {
+    title: 'Motion Design',
+    color: '#ff006e',
+    desc: 'Animazioni 2D, title sequences, grafiche animate. Ogni elemento in movimento racconta qualcosa: dal kinetic type ai loop da condividere.',
+    projects: [
+      { title: 'Title Sequence', meta: 'Short Film · After Effects · 2024' },
+      { title: 'Brand Identity Anim.', meta: 'Startup · AE + Illustrator · 2024' },
+      { title: 'Kinetic Typography', meta: 'Podcast · Premiere · 2023' },
+      { title: 'Opener Evento', meta: 'Music Festival · AE · 2024' },
+      { title: 'Explainer Video', meta: 'SaaS · After Effects · 2023' },
+      { title: 'Loop Pack', meta: 'Content Creator · AE · 2025' },
+    ]
+  }
+};
+
+/* ── PANEL ───────────────────────────────── */
+const panel = document.getElementById('project-panel');
+const overlay = document.getElementById('panel-overlay');
+const panelTitle = document.getElementById('panel-title');
+const panelAccent = document.getElementById('panel-accent-bar');
+const panelDesc = document.getElementById('panel-desc');
+const projectsGrid = document.getElementById('projects-grid');
+
+function openPanel(category) {
+  const d = data[category];
+  panelTitle.textContent = d.title;
+  panelAccent.style.background = d.color;
+  panelDesc.textContent = d.desc;
+  projectsGrid.innerHTML = '';
+  d.projects.forEach(p => {
+    const card = document.createElement('a');
+    card.className = 'project-card';
+    card.href = '#';
+    card.innerHTML = `
+      <div class="project-thumb">
+        <div class="project-thumb-bg">${p.title}</div>
+        <div class="play-btn">
+          <svg viewBox="0 0 16 16"><polygon points="4,2 14,8 4,14" fill="white"/></svg>
+        </div>
+      </div>
+      <div class="project-info">
+        <div class="project-title">${p.title}</div>
+        <div class="project-meta">${p.meta}</div>
+      </div>`;
+    projectsGrid.appendChild(card);
+  });
+  panel.classList.add('open');
+  overlay.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closePanel() {
+  panel.classList.remove('open');
+  overlay.classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+document.querySelectorAll('.cat-row').forEach(row => {
+  row.addEventListener('click', () => openPanel(row.dataset.category));
+});
+document.getElementById('panel-close').addEventListener('click', closePanel);
+overlay.addEventListener('click', closePanel);
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closePanel(); });
+
+/* ── SCROLL REVEAL ───────────────────────── */
+const obs = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); obs.unobserve(e.target); } });
+}, { threshold: 0.08 });
+document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+
+/* ── CURSOR ──────────────────────────────── */
+const dot = document.getElementById('cur-dot');
+const ring = document.getElementById('cur-ring');
+let mx = 0, my = 0, rx = 0, ry = 0;
+document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+(function loop() {
+  dot.style.left = mx + 'px'; dot.style.top = my + 'px';
+  rx += (mx - rx) * 0.14; ry += (my - ry) * 0.14;
+  ring.style.left = rx + 'px'; ring.style.top = ry + 'px';
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
